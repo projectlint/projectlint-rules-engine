@@ -1,0 +1,53 @@
+{
+  "name": "@projectlint/rules-engine",
+  "version": "0.0.0",
+  "description": "Rules engine for projectlint, a style checker and lint tool for (Node.js) projects",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint .",
+    "prepare": "babel src --out-dir .",
+    "pretest": "npm run lint",
+    "test": "jest --coverage --notify"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/projectlint/projectlint-rules-engine.git"
+  },
+  "keywords": [
+    "lint",
+    "linter",
+    "project",
+    "node",
+    "nodejs",
+    "node.js",
+    "npm",
+    "python",
+    "test",
+    "tests",
+    "error",
+    "errors",
+    "hierarchy",
+    "documentation",
+    "automation"
+  ],
+  "author": "Jesús Leganés-Combarro 'piranna' <piranna@gmail.com>",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/projectlint/projectlint-rules-engine/issues"
+  },
+  "homepage": "https://github.com/projectlint/projectlint-rules-engine#readme",
+  "devDependencies": {
+    "@babel/cli": "^7.7.5",
+    "@babel/plugin-proposal-optional-chaining": "^7.7.5",
+    "babel-eslint": "^10.0.3",
+    "babel-jest": "^24.9.0",
+    "eslint": "^6.7.2",
+    "jest-cli": "^24.9.0",
+    "prettier": "^1.19.1"
+  },
+  "jest": {
+    "collectCoverageFrom": [
+      "src/*.js"
+    ]
+  }
+}
