@@ -18,24 +18,6 @@ function mapVisited(name)
   return this[name]
 }
 
-function normalizeArguments(validators, rules)
-{
-  // validators
-  if(!validators) throw new SyntaxError('`validators` must be set')
-
-  if(!Array.isArray(validators)) validators = Object.entries(validators)
-
-  if(!validators.length) throw new SyntaxError('No `validators` are defined')
-
-  // rules
-  if(!rules) throw new SyntaxError('`rules` must be set')
-  if(!rules.length) throw new SyntaxError('No `rules` are defined')
-
-  if(Array.isArray(rules)) rules = rules.reduce(reduceRules, {})
-
-  return [validators, rules]
-}
-
 function reduceRules(rules, name)
 {
   rules[name] = undefined
@@ -44,44 +26,60 @@ function reduceRules(rules, name)
 }
 
 
+/**
+ * @return {Array.<Promise>}
+ *
+ * @throw {SyntaxError} arguments are incorrect
+ */
 module.exports = function(validators, rules)
 {
-  // Normalize arguments
-  try {
-    [validators, rules] = normalizeArguments(validators, rules)
-  } catch(error)
-  {
-    return Promise.reject(error)
-  }
+  // Normalize validators
+  if(!validators) throw new SyntaxError('`validators` argument must be set')
+
+  if(!Array.isArray(validators)) validators = Object.entries(validators)
+
+  if(!validators.length) throw new SyntaxError('No `validators` are defined')
+
+  // Normalize rules
+  if(!rules) throw new SyntaxError('`rules` argument must be set')
+
+  if(Array.isArray(rules)) rules = rules.reduce(reduceRules, {})
+
+  if(!Object.keys(rules).length) throw new SyntaxError('No `rules` are defined')
 
   // Filter rules
+  // TODO enable parent rules with default options when not set explicitly
   let filteredRules = validators.filter(filterRules, Object.keys(rules))
-
-  let {length} = filteredRules
-  if(!length) return Promise.reject(new SyntaxError('No rules are enabled'))
+  if(!filteredRules.length) throw new SyntaxError('No rules are enabled')
 
   // Set dependencies between rules, apply them and check for cycles
   const visited = {}
 
-  while(length)
+  while(filteredRules.length)
   {
     const filteredRulesNext = []
 
     for(const entry of filteredRules)
     {
-      const [name, {dependsOn, run}] = entry
+      const [name, {run}] = entry
+      let [, {dependsOn}] = entry
 
-      function runValidator()
+      if(typeof dependsOn === 'string') dependsOn = [dependsOn]
+
+      async function runValidator()
       {
-        return run(rules[name])
-        .then(function(result)
+        let result
+
+        try
         {
-          return {dependsOn, name, result}
-        },
-        function(error)
+          result = await run(rules[name])
+        }
+        catch(error)
         {
           throw {dependsOn, error, name}
-        })
+        }
+
+        return {dependsOn, name, result}
       }
 
       // Rule is one of the root ones, process it without dependencies
@@ -92,7 +90,7 @@ module.exports = function(validators, rules)
       }
 
       // Rule has dependencies pending to be procesed, add to the next iteration
-      if(!dependsOn.every(visited.includes.bind(visited)))
+      if(!dependsOn.every(mapVisited, visited))
       {
         filteredRulesNext.push(entry)
         continue
@@ -103,17 +101,16 @@ module.exports = function(validators, rules)
         .then(function(results)
         {
           // Some dependencies has failed, we can't run
-          if(result.some(isRejected)) throw {dependsOn, name, unsatisfied: true}
+          if(results.some(isRejected)) throw {dependsOn, name, unsatisfied: true}
 
           return runValidator()
         })
     }
 
     // There are circular references, don't process more rules
-    if(length === filteredRulesNext.length) break
+    if(filteredRules.length === filteredRulesNext.length) break
 
     filteredRules = filteredRulesNext
-    ({length} = filteredRules)
   }
 
   // Return rules results
