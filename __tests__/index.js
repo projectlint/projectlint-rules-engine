@@ -122,9 +122,7 @@ describe("rules dependencies", function() {
                   "result": undefined,
                 },
                 Object {
-                  "dependsOn": Array [
-                    "parent",
-                  ],
+                  "dependsOn": "parent",
                   "name": "child",
                   "result": undefined,
                 },
@@ -160,9 +158,7 @@ describe("rules dependencies", function() {
                 },
                 Object {
                   "reason": Object {
-                    "dependsOn": Array [
-                      "parent",
-                    ],
+                    "dependsOn": "parent",
                     "name": "child",
                     "unsatisfied": true,
                   },
