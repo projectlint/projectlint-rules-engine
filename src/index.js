@@ -23,7 +23,7 @@ function expandRules(value)
 
 function expandRules_forEntries([key, value])
 {
-  expandRules.call(this, value || key)
+  expandRules.call(this, value === true ?  key : value)
 }
 
 function filterRules([name])
@@ -50,7 +50,7 @@ function flatKeys(value)
 
 function flatMap_forEntries([key, value])
 {
-  return [key, flatKeys(value)]
+  return [key, flatKeys(value === true ?  key : value)]
 }
 
 function getEntryName([name])

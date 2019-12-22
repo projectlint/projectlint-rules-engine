@@ -105,29 +105,85 @@ test("circular reference", function() {
 });
 
 describe("rules dependencies", function() {
-  test("succesful", function() {
-    const validators = [
-      ["parent", { run() {} }],
-      ["child", { dependsOn: "parent", run() {} }]
-    ];
-    const rules = ["parent", "child"];
+  describe("succesful", function() {
+    test("string dependency", function() {
+      const validators = [
+        ["parent", { run() {} }],
+        ["child", { dependsOn: "parent", run() {} }]
+      ];
+      const rules = ["parent", "child"];
 
-    const promise = Promise.all(rulesEngine(validators, rules));
+      const promise = Promise.all(rulesEngine(validators, rules));
 
-    return expect(promise).resolves.toMatchInlineSnapshot(`
-              Array [
-                Object {
-                  "dependsOn": undefined,
-                  "name": "parent",
-                  "result": undefined,
-                },
-                Object {
-                  "dependsOn": "parent",
-                  "name": "child",
-                  "result": undefined,
-                },
-              ]
-            `);
+      return expect(promise).resolves.toMatchInlineSnapshot(`
+                Array [
+                  Object {
+                    "dependsOn": undefined,
+                    "name": "parent",
+                    "result": undefined,
+                  },
+                  Object {
+                    "dependsOn": "parent",
+                    "name": "child",
+                    "result": undefined,
+                  },
+                ]
+              `);
+    });
+
+    test("array dependency", function() {
+      const validators = [
+        ["parent", { run() {} }],
+        ["child", { dependsOn: ["parent"], run() {} }]
+      ];
+      const rules = ["parent", "child"];
+
+      const promise = Promise.all(rulesEngine(validators, rules));
+
+      return expect(promise).resolves.toMatchInlineSnapshot(`
+                Array [
+                  Object {
+                    "dependsOn": undefined,
+                    "name": "parent",
+                    "result": undefined,
+                  },
+                  Object {
+                    "dependsOn": Array [
+                      "parent",
+                    ],
+                    "name": "child",
+                    "result": undefined,
+                  },
+                ]
+              `);
+    });
+
+    test("object dependency", function() {
+      const validators = [
+        ["parent", { run() {} }],
+        ["child", { dependsOn: {"parent": true}, run() {} }]
+      ];
+      const rules = ["parent", "child"];
+
+      const promise = Promise.all(rulesEngine(validators, rules));
+
+      return expect(promise).resolves.toMatchInlineSnapshot(`
+                Array [
+                  Object {
+                    "dependsOn": undefined,
+                    "name": "parent",
+                    "result": undefined,
+                  },
+                  Object {
+                    "dependsOn": Object {
+                      "parent": true,
+                    },
+                    "name": "child",
+                    "result": undefined,
+                  },
+                ]
+              `);
+    });
   });
 
   test("failed", function() {
