@@ -2,23 +2,18 @@ function expandRules(value)
 {
   const {filteredRules, validators} = this
 
-  if(typeof value === 'string')
-  {
-    const rule = validators.find(findValidator_byName, value)
-
-    if(!rule) throw new SyntaxError(`'${value}' rule not found`)
-
-    return filteredRules.find(findValidator_byName, value)
-    || filteredRules.push(rule)
-  }
-
   if(Array.isArray(value))
     return value.forEach(expandRules, this)
 
   if(value.constructor.name === 'Object')
     return Object.entries(value).forEach(expandRules_forEntries, this)
 
-  throw new SyntaxError(`Unknown type for value '${value}'`)
+  const rule = validators.find(findValidator_byName, value)
+
+  if(!rule) throw new SyntaxError(`'${value}' rule not found`)
+
+  return filteredRules.find(findValidator_byName, value)
+  || filteredRules.push(rule)
 }
 
 function expandRules_forEntries([key, value])
