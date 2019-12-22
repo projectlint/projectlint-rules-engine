@@ -186,41 +186,126 @@ describe("rules dependencies", function() {
     });
   });
 
-  test("failed", function() {
-    const validators = [
-      [
-        "parent",
-        {
-          run() {
-            throw new Error();
+  describe("failed", function() {
+    test("string dependency", function() {
+      const validators = [
+        [
+          "parent",
+          {
+            run() {
+              throw new Error();
+            }
           }
-        }
-      ],
-      ["child", { dependsOn: "parent", run() {} }]
-    ];
-    const rules = ["parent", "child"];
+        ],
+        ["child", { dependsOn: "parent", run() {} }]
+      ];
+      const rules = ["parent", "child"];
 
-    const promise = Promise.allSettled(rulesEngine(validators, rules));
+      const promise = Promise.allSettled(rulesEngine(validators, rules));
 
-    return expect(promise).resolves.toMatchInlineSnapshot(`
-              Array [
-                Object {
-                  "reason": Object {
-                    "dependsOn": undefined,
-                    "error": [Error],
-                    "name": "parent",
+      return expect(promise).resolves.toMatchInlineSnapshot(`
+                Array [
+                  Object {
+                    "reason": Object {
+                      "dependsOn": undefined,
+                      "error": [Error],
+                      "name": "parent",
+                    },
+                    "status": "rejected",
                   },
-                  "status": "rejected",
-                },
-                Object {
-                  "reason": Object {
-                    "dependsOn": "parent",
-                    "name": "child",
-                    "unsatisfied": true,
+                  Object {
+                    "reason": Object {
+                      "dependsOn": "parent",
+                      "name": "child",
+                      "unsatisfied": true,
+                    },
+                    "status": "rejected",
                   },
-                  "status": "rejected",
-                },
-              ]
-            `);
+                ]
+              `);
+    });
+
+    describe("object dependency", function() {
+      test.skip("shortcircuit", function() {
+        const validators = [
+          [
+            "parent",
+            {
+              run() {
+                throw new Error();
+              }
+            }
+          ],
+          ["child", { dependsOn: {parent: true}, run() {} }]
+        ];
+        const rules = ["parent", "child"];
+
+        const promise = Promise.allSettled(rulesEngine(validators, rules,
+          {shortcircuit_or: true}));
+
+        return expect(promise).resolves.toMatchInlineSnapshot(`
+                  Array [
+                    Object {
+                      "reason": Object {
+                        "dependsOn": undefined,
+                        "error": [Error],
+                        "name": "parent",
+                      },
+                      "status": "rejected",
+                    },
+                    Object {
+                      "reason": Object {
+                        "dependsOn": Object {
+                          "parent": true,
+                        },
+                        "name": "child",
+                        "unsatisfied": true,
+                      },
+                      "status": "rejected",
+                    },
+                  ]
+                `);
+      });
+
+      test("no shortcircuit", function() {
+        const validators = [
+          [
+            "parent",
+            {
+              run() {
+                throw new Error();
+              }
+            }
+          ],
+          ["child", { dependsOn: {parent: true}, run() {} }]
+        ];
+        const rules = ["parent", "child"];
+
+        const promise = Promise.allSettled(rulesEngine(validators, rules));
+
+        return expect(promise).resolves.toMatchInlineSnapshot(`
+                  Array [
+                    Object {
+                      "reason": Object {
+                        "dependsOn": undefined,
+                        "error": [Error],
+                        "name": "parent",
+                      },
+                      "status": "rejected",
+                    },
+                    Object {
+                      "reason": Object {
+                        "dependsOn": Object {
+                          "parent": true,
+                        },
+                        "name": "child",
+                        "unsatisfied": true,
+                      },
+                      "status": "rejected",
+                    },
+                  ]
+                `);
+      });
+    });
   });
 });

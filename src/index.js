@@ -137,11 +137,10 @@ module.exports = function(
     // Rule is one of the root ones, process it without dependencies
     if(!dependencies) return Promise.resolve()
 
-    if(typeof dependencies === 'string') return visited[dependencies]
-    .catch(function()
+    function onError()
     {
       throw {dependsOn: dependencies, name, unsatisfied: true}
-    })
+    }
 
     if(Array.isArray(dependencies))
     {
@@ -150,37 +149,32 @@ module.exports = function(
       if(shortcircuit_and) return Promise.all(promises)
 
       return Promise.allSettled(promises)
-      .then(function(dependsOn)
+      .then(function(results)
       {
         // Some dependencies has failed, we can't run
-        if(dependsOn.some(isRejected))
-          throw {dependsOn, name, unsatisfied: true}
+        if(results.some(isRejected)) onError()
 
-        return dependsOn.map(getValue)
+        return results.map(getValue)
       })
     }
 
     if(dependencies.constructor.name === 'Object')
     {
       if(shortcircuit_or)
-      {
-        const promises = Object.entries(dependencies).map(mapEntries, this)
-
-        return Promise.any(promises)
-      }
+        return Promise.any(Object.entries(dependencies).map(mapEntries, this))
+        .catch(onError)
 
       const keys = Object.keys(dependencies)
       const promises = Object.entries(dependencies)
       .map(processDependencies_forEntries, this)
 
       return Promise.allSettled(promises)
-      .then(function(dependsOn)
+      .then(function(results)
       {
         // Some dependencies has failed, we can't run
-        if(dependsOn.every(isRejected))
-          throw {dependsOn, name, unsatisfied: true}
+        if(results.every(isRejected)) onError()
 
-        return dependsOn.reduce(function(acum, dependency, index)
+        return results.reduce(function(acum, dependency, index)
         {
           if(dependency.hasOwnProperty('value'))
             acum[keys[index]] = dependency.value
@@ -190,7 +184,7 @@ module.exports = function(
       })
     }
 
-    throw new SyntaxError(`Unknown type for dependencies '${dependencies}'`)
+    return visited[dependencies].catch(onError)
   }
 
   function processDependencies_forEntries([key, value])
@@ -198,12 +192,12 @@ module.exports = function(
     return processDependencies.call(this, value === true ?  key : value)
   }
 
-  function mapEntries([key, value])
+  function mapEntries(entry)
   {
-    return processDependencies.call(this, value)
+    return processDependencies_forEntries.call(this, entry)
     .then(function(value)
     {
-      return {[key]: value}
+      return {[entry.key]: value}
     })
   }
 
