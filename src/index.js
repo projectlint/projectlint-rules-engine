@@ -8,7 +8,8 @@ function expandRules(value)
 
     if(!rule) throw new SyntaxError(`'${value}' rule not found`)
 
-    return filteredRules.push(rule)
+    return filteredRules.find(findValidator_byName, value)
+    || filteredRules.push(rule)
   }
 
   if(Array.isArray(value))
@@ -169,7 +170,8 @@ module.exports = function(
       }
 
       const keys = Object.keys(dependencies)
-      const promises = Object.values(dependencies).map(processDependencies, this)
+      const promises = Object.entries(dependencies)
+      .map(processDependencies_forEntries, this)
 
       return Promise.allSettled(promises)
       .then(function(dependsOn)
@@ -189,6 +191,11 @@ module.exports = function(
     }
 
     throw new SyntaxError(`Unknown type for dependencies '${dependencies}'`)
+  }
+
+  function processDependencies_forEntries([key, value])
+  {
+    return processDependencies.call(this, value === true ?  key : value)
   }
 
   function mapEntries([key, value])
@@ -246,9 +253,11 @@ module.exports = function(
   // notify to the user since we have already started procesing other rules
   if(filteredRules.length)
   {
-    const error = new SyntaxError('Circular reference between enabled rules')
+    const rules = filteredRules.map(getEntryName)
 
-    error.rules = filteredRules.map(getEntryName)
+    const error = new SyntaxError(`Circular reference between rules '${rules}'`)
+
+    error.rules = rules
 
     promises.unshift(Promise.reject({error}))
   }

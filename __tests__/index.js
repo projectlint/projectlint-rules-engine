@@ -99,7 +99,7 @@ test("circular reference", function() {
 
   return expect(promise).rejects.toMatchInlineSnapshot(`
                 Object {
-                  "error": [SyntaxError: Circular reference between enabled rules],
+                  "error": [SyntaxError: Circular reference between rules 'dumb'],
                 }
             `);
 });
