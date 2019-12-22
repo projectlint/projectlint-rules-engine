@@ -38,7 +38,7 @@
   "homepage": "https://github.com/projectlint/projectlint-rules-engine#readme",
   "devDependencies": {
     "@babel/cli": "^7.7.5",
-    "@babel/plugin-proposal-optional-chaining": "^7.7.5",
+    "@babel/preset-env": "^7.7.7",
     "babel-eslint": "^10.0.3",
     "babel-jest": "^24.9.0",
     "eslint": "^6.7.2",
@@ -49,5 +49,8 @@
     "collectCoverageFrom": [
       "src/*.js"
     ]
+  },
+  "dependencies": {
+    "core-js": "^3.6.0"
   }
 }
