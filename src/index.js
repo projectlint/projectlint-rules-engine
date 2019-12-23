@@ -58,6 +58,11 @@ function getEntryName([name])
   return name
 }
 
+function getDependsOn([, {dependsOn}])
+{
+  return dependsOn
+}
+
 function getValue({value})
 {
   return value
@@ -71,19 +76,6 @@ function isRejected({status})
 function mapVisited(name)
 {
   return this[name]
-}
-
-function normalizeFilteredRules([, value], _, filteredRules)
-{
-  let {dependsOn} = value
-
-  if(!dependsOn) return
-
-  // // Normalize dependencies
-  // if(typeof dependsOn === 'string') value.dependsOn = dependsOn = [dependsOn]
-
-  // Expand rules
-  expandRules.call({filteredRules, validators: this}, dependsOn)
 }
 
 function reduceRules(rules, name)
@@ -124,8 +116,9 @@ module.exports = function(
   let filteredRules = validators.filter(filterRules, Object.keys(rules))
   if(!filteredRules.length) throw new SyntaxError('No rules are enabled')
 
-  // Normalize and expand filtered rules
-  filteredRules.forEach(normalizeFilteredRules, validators)
+  // Expand filtered rules
+  filteredRules.map(getDependsOn).filter(Boolean)
+  .forEach(expandRules, {filteredRules, validators})
 
   // Set dependencies between rules, apply them and check for cycles
   const visited = {}
