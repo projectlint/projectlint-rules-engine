@@ -37,11 +37,11 @@
   },
   "homepage": "https://github.com/projectlint/projectlint-rules-engine#readme",
   "devDependencies": {
-    "@babel/cli": "^7.7.5",
+    "@babel/cli": "^7.7.7",
     "@babel/preset-env": "^7.7.7",
     "babel-eslint": "^10.0.3",
     "babel-jest": "^24.9.0",
-    "eslint": "^6.7.2",
+    "eslint": "^6.8.0",
     "jest-cli": "^24.9.0",
     "prettier": "^1.19.1"
   },
