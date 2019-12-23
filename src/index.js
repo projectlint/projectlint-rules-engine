@@ -197,7 +197,7 @@ module.exports = function(
     return processDependencies_forEntries.call(this, entry)
     .then(function(value)
     {
-      return {[entry.key]: value}
+      return {[entry[0]]: value}
     })
   }
 

@@ -161,7 +161,7 @@ describe("rules dependencies", function() {
     test("object dependency", function() {
       const validators = [
         ["parent", { run() {} }],
-        ["child", { dependsOn: {"parent": true}, run() {} }]
+        ["child", { dependsOn: { parent: true }, run() {} }]
       ];
       const rules = ["parent", "child"];
 
@@ -228,40 +228,34 @@ describe("rules dependencies", function() {
     describe("object dependency", function() {
       test("shortcircuit", function() {
         const validators = [
-          [
-            "parent",
-            {
-              run() {
-                throw new Error();
-              }
-            }
-          ],
-          ["child", { dependsOn: {parent: true}, run() {} }]
+          ["parent", { run() {} }],
+          ["child", { dependsOn: { parent: true }, run() {} }]
         ];
         const rules = ["parent", "child"];
 
-        const promise = Promise.allSettled(rulesEngine(validators, rules,
-          {shortcircuit_or: true}));
+        const promise = Promise.allSettled(
+          rulesEngine(validators, rules, { shortcircuit_or: true })
+        );
 
         return expect(promise).resolves.toMatchInlineSnapshot(`
                   Array [
                     Object {
-                      "reason": Object {
+                      "status": "fulfilled",
+                      "value": Object {
                         "dependsOn": undefined,
-                        "error": [Error],
                         "name": "parent",
+                        "result": undefined,
                       },
-                      "status": "rejected",
                     },
                     Object {
-                      "reason": Object {
+                      "status": "fulfilled",
+                      "value": Object {
                         "dependsOn": Object {
                           "parent": true,
                         },
                         "name": "child",
-                        "unsatisfied": true,
+                        "result": undefined,
                       },
-                      "status": "rejected",
                     },
                   ]
                 `);
@@ -277,7 +271,7 @@ describe("rules dependencies", function() {
               }
             }
           ],
-          ["child", { dependsOn: {parent: true}, run() {} }]
+          ["child", { dependsOn: { parent: true }, run() {} }]
         ];
         const rules = ["parent", "child"];
 
