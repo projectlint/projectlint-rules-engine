@@ -226,7 +226,7 @@ describe("rules dependencies", function() {
     });
 
     describe("object dependency", function() {
-      test.skip("shortcircuit", function() {
+      test("shortcircuit", function() {
         const validators = [
           [
             "parent",

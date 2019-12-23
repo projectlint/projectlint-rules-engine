@@ -1,3 +1,8 @@
+// TODO https://github.com/zloirock/core-js/issues/737
+require("core-js/modules/esnext.aggregate-error");
+require("core-js/modules/esnext.promise.any");
+
+
 function expandRules(value)
 {
   const {filteredRules, validators} = this

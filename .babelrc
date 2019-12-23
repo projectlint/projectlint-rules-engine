@@ -7,7 +7,7 @@
           "proposals": true,
           "version": 3
         },
-        "useBuiltIns": "usage"
+        "useBuiltIns": "entry"
       }
     ]
   ]
