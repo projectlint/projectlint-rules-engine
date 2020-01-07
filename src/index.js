@@ -3,6 +3,12 @@ require("core-js/modules/esnext.aggregate-error");
 require("core-js/modules/esnext.promise.any");
 
 
+class Unsatisfied extends Error
+{
+  name = 'Unsatisfied'
+}
+
+
 function expandRules(value)
 {
   const {filteredRules, validators} = this
@@ -87,7 +93,7 @@ function reduceRules(rules, name)
 
 
 /**
- * @return {Array.<Promise>}
+ * @return {Object.<string, Promise>}
  *
  * @throw {SyntaxError} arguments are incorrect
  */
@@ -121,19 +127,11 @@ module.exports = function(
   .forEach(expandRules, {filteredRules, validators})
 
   // Set dependencies between rules, apply them and check for cycles
-  const visited = {}
 
   function processDependencies(dependencies)
   {
-    const name = this.toString()
-
     // Rule is one of the root ones, process it without dependencies
     if(!dependencies) return Promise.resolve()
-
-    function onError()
-    {
-      throw {dependsOn: dependencies, name, unsatisfied: true}
-    }
 
     if(Array.isArray(dependencies))
     {
@@ -144,8 +142,8 @@ module.exports = function(
       return Promise.allSettled(promises)
       .then(function(results)
       {
-        // Some dependencies has failed, we can't run
-        if(results.some(isRejected)) onError()
+        // Some dependencies has failed, we can't exec function
+        if(results.some(isRejected)) throw new Unsatisfied()
 
         return results.map(getValue)
       })
@@ -155,7 +153,6 @@ module.exports = function(
     {
       if(shortcircuit_or)
         return Promise.any(Object.entries(dependencies).map(mapEntries, this))
-        .catch(onError)
 
       const keys = Object.keys(dependencies)
       const promises = Object.entries(dependencies)
@@ -164,8 +161,8 @@ module.exports = function(
       return Promise.allSettled(promises)
       .then(function(results)
       {
-        // Some dependencies has failed, we can't run
-        if(results.every(isRejected)) onError()
+        // All dependencies has failed, we can't exec function
+        if(results.every(isRejected)) throw new Unsatisfied()
 
         return results.reduce(function(acum, dependency, index)
         {
@@ -177,7 +174,12 @@ module.exports = function(
       })
     }
 
-    return visited[dependencies].catch(onError)
+    return visited[dependencies]
+    .catch(function()
+    {
+      // Dependencies has failed, we can't exec function
+      throw new Unsatisfied()
+    })
   }
 
   function processDependencies_forEntries([key, value])
@@ -194,33 +196,19 @@ module.exports = function(
     })
   }
 
+  // Check for circular references
+  let visited = {}
+
   while(filteredRules.length)
   {
     const filteredRulesNext = []
 
     for(const entry of filteredRules)
     {
-      const [name, {dependsOn, run}] = entry
+      const [ruleName, rule] = entry
 
-      async function runValidator(dependencies)
-      {
-        let result
-
-        try
-        {
-          result = await run(context, dependencies, rules[name])
-        }
-        catch(error)
-        {
-          throw {dependsOn, error, name}
-        }
-
-        return {dependsOn, name, result}
-      }
-
-      if(flatKeys(dependsOn).every(mapVisited, visited))
-        visited[name] = processDependencies.call(name, dependsOn)
-        .then(runValidator)
+      if(flatKeys(rule.dependsOn).every(mapVisited, visited))
+        visited[ruleName] = rule
 
       // Rule has dependencies pending to be procesed, add to the next iteration
       else
@@ -228,26 +216,49 @@ module.exports = function(
     }
 
     // There are circular references, don't process more rules
-    if(filteredRules.length === filteredRulesNext.length) break
+    if(filteredRules.length === filteredRulesNext.length)
+    {
+      const rules = filteredRules.map(getEntryName)
+
+      const error = new SyntaxError(`Circular reference between rules '${rules}'`)
+
+      error.rules = rules
+
+      throw error
+    }
+
+    filteredRules = filteredRulesNext
+  }
+
+  // Process rules
+  filteredRules = Object.entries(visited)
+  visited = {}
+
+  while(filteredRules.length)
+  {
+    const filteredRulesNext = []
+
+    for(const entry of filteredRules)
+    {
+      const [ruleName, {dependsOn, func}] = entry
+
+      // Rule has dependencies pending to be procesed, add to the next iteration
+      if(!flatKeys(dependsOn).every(mapVisited, visited))
+      {
+        filteredRulesNext.push(entry)
+        continue
+      }
+
+      visited[ruleName] = processDependencies.call(ruleName, dependsOn)
+      .then(async function(dependencies)
+      {
+        return func(context, dependencies, rules[ruleName])
+      })
+    }
 
     filteredRules = filteredRulesNext
   }
 
   // Return rules results
-  const promises = Object.values(visited)
-
-  // If there was circular references, force to set validation as failed to
-  // notify to the user since we have already started procesing other rules
-  if(filteredRules.length)
-  {
-    const rules = filteredRules.map(getEntryName)
-
-    const error = new SyntaxError(`Circular reference between rules '${rules}'`)
-
-    error.rules = rules
-
-    promises.unshift(Promise.reject({error}))
-  }
-
-  return promises
+  return visited
 }

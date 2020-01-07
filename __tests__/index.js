@@ -1,9 +1,9 @@
-const rulesEngine = require("../src");
+const tasksEngine = require("../src");
 
 describe("bad arguments", function() {
   test("no arguments", function() {
     function func() {
-      rulesEngine();
+      tasksEngine();
     }
 
     expect(func).toThrowErrorMatchingInlineSnapshot(
@@ -14,7 +14,7 @@ describe("bad arguments", function() {
   describe("empty `validators` list", function() {
     test("`validators` as array", function() {
       function func() {
-        rulesEngine([]);
+        tasksEngine([]);
       }
 
       expect(func).toThrowErrorMatchingInlineSnapshot(
@@ -24,7 +24,7 @@ describe("bad arguments", function() {
 
     test("`validators` as object", function() {
       function func() {
-        rulesEngine({});
+        tasksEngine({});
       }
 
       expect(func).toThrowErrorMatchingInlineSnapshot(
@@ -35,7 +35,7 @@ describe("bad arguments", function() {
 
   test("no `rules` argument", function() {
     function func() {
-      rulesEngine([[]]);
+      tasksEngine([[]]);
     }
 
     expect(func).toThrowErrorMatchingInlineSnapshot(
@@ -46,7 +46,7 @@ describe("bad arguments", function() {
   describe("empty `rules` list", function() {
     test("`rules` as array", function() {
       function func() {
-        rulesEngine([[]], []);
+        tasksEngine([[]], []);
       }
 
       expect(func).toThrowErrorMatchingInlineSnapshot(
@@ -56,7 +56,7 @@ describe("bad arguments", function() {
 
     test("`rules` as object", function() {
       function func() {
-        rulesEngine([[]], {});
+        tasksEngine([[]], {});
       }
 
       expect(func).toThrowErrorMatchingInlineSnapshot(
@@ -67,7 +67,7 @@ describe("bad arguments", function() {
 
   test("no rules enabled", function() {
     function func() {
-      rulesEngine([[]], [""]);
+      tasksEngine([[]], [""]);
     }
 
     expect(func).toThrowErrorMatchingInlineSnapshot(`"No rules are enabled"`);
@@ -75,18 +75,22 @@ describe("bad arguments", function() {
 });
 
 test("enabled one rule", function() {
-  const validators = [["dumb", { run() {} }]];
+  const validators = [["dumb", { func() {} }]];
   const rules = ["dumb"];
 
-  const promise = Promise.all(rulesEngine(validators, rules));
+  const result = tasksEngine(validators, rules);
+
+  expect(result).toMatchInlineSnapshot(`
+    Object {
+      "dumb": Promise {},
+    }
+  `);
+
+  const promise = Promise.all(Object.values(result));
 
   return expect(promise).resolves.toMatchInlineSnapshot(`
                 Array [
-                  Object {
-                    "dependsOn": undefined,
-                    "name": "dumb",
-                    "result": undefined,
-                  },
+                  undefined,
                 ]
             `);
 });
@@ -95,92 +99,91 @@ test("circular reference", function() {
   const validators = [["dumb", { dependsOn: "dumb" }]];
   const rules = ["dumb"];
 
-  const promise = Promise.all(rulesEngine(validators, rules));
+  function func() {
+    tasksEngine(validators, rules);
+  }
 
-  return expect(promise).rejects.toMatchInlineSnapshot(`
-                Object {
-                  "error": [SyntaxError: Circular reference between rules 'dumb'],
-                }
-            `);
+  expect(func).toThrowErrorMatchingInlineSnapshot(
+    `"Circular reference between rules 'dumb'"`
+  );
 });
 
 describe("rules dependencies", function() {
   describe("succesful", function() {
     test("string dependency", function() {
       const validators = [
-        ["parent", { run() {} }],
-        ["child", { dependsOn: "parent", run() {} }]
+        ["parent", { func() {} }],
+        ["child", { dependsOn: "parent", func() {} }]
       ];
       const rules = ["parent", "child"];
 
-      const promise = Promise.all(rulesEngine(validators, rules));
+      const result = tasksEngine(validators, rules);
+
+      expect(result).toMatchInlineSnapshot(`
+        Object {
+          "child": Promise {},
+          "parent": Promise {},
+        }
+      `);
+
+      const promise = Promise.all(Object.values(result));
 
       return expect(promise).resolves.toMatchInlineSnapshot(`
                 Array [
-                  Object {
-                    "dependsOn": undefined,
-                    "name": "parent",
-                    "result": undefined,
-                  },
-                  Object {
-                    "dependsOn": "parent",
-                    "name": "child",
-                    "result": undefined,
-                  },
+                  undefined,
+                  undefined,
                 ]
               `);
     });
 
     test("array dependency", function() {
       const validators = [
-        ["parent", { run() {} }],
-        ["child", { dependsOn: ["parent"], run() {} }]
+        ["parent", { func() {} }],
+        ["child", { dependsOn: ["parent"], func() {} }]
       ];
       const rules = ["parent", "child"];
 
-      const promise = Promise.all(rulesEngine(validators, rules));
+      const result = tasksEngine(validators, rules);
+
+      expect(result).toMatchInlineSnapshot(`
+        Object {
+          "child": Promise {},
+          "parent": Promise {},
+        }
+      `);
+
+      const promise = Promise.all(Object.values(result));
 
       return expect(promise).resolves.toMatchInlineSnapshot(`
                 Array [
-                  Object {
-                    "dependsOn": undefined,
-                    "name": "parent",
-                    "result": undefined,
-                  },
-                  Object {
-                    "dependsOn": Array [
-                      "parent",
-                    ],
-                    "name": "child",
-                    "result": undefined,
-                  },
+                  undefined,
+                  undefined,
                 ]
               `);
     });
 
     test("object dependency", function() {
       const validators = [
-        ["parent", { run() {} }],
-        ["child", { dependsOn: { parent: true }, run() {} }]
+        ["parent", { func() {} }],
+        ["child", { dependsOn: { parent: true }, func() {} }]
       ];
       const rules = ["parent", "child"];
 
-      const promise = Promise.all(rulesEngine(validators, rules));
+      const result = tasksEngine(validators, rules);
+
+      expect(result).toMatchInlineSnapshot(`
+        Object {
+          "child": Promise {},
+          "parent": Promise {},
+        }
+      `);
+
+      const promise = Promise.all(Object.values(result));
 
       return expect(promise).resolves.toMatchInlineSnapshot(`
                 Array [
-                  Object {
-                    "dependsOn": undefined,
-                    "name": "parent",
-                    "result": undefined,
-                  },
-                  Object {
-                    "dependsOn": Object {
-                      "parent": true,
-                    },
-                    "name": "child",
-                    "result": undefined,
-                  },
+                  undefined,
+                  undefined,
                 ]
               `);
     });
@@ -192,33 +195,34 @@ describe("rules dependencies", function() {
         [
           "parent",
           {
-            run() {
+            func() {
               throw new Error();
             }
           }
         ],
-        ["child", { dependsOn: "parent", run() {} }]
+        ["child", { dependsOn: "parent", func() {} }]
       ];
       const rules = ["parent", "child"];
 
-      const promise = Promise.allSettled(rulesEngine(validators, rules));
+      const result = tasksEngine(validators, rules);
+
+      expect(result).toMatchInlineSnapshot(`
+        Object {
+          "child": Promise {},
+          "parent": Promise {},
+        }
+      `);
+
+      const promise = Promise.allSettled(Object.values(result));
 
       return expect(promise).resolves.toMatchInlineSnapshot(`
                 Array [
                   Object {
-                    "reason": Object {
-                      "dependsOn": undefined,
-                      "error": [Error],
-                      "name": "parent",
-                    },
+                    "reason": [Error],
                     "status": "rejected",
                   },
                   Object {
-                    "reason": Object {
-                      "dependsOn": "parent",
-                      "name": "child",
-                      "unsatisfied": true,
-                    },
+                    "reason": [Unsatisfied],
                     "status": "rejected",
                   },
                 ]
@@ -228,34 +232,31 @@ describe("rules dependencies", function() {
     describe("object dependency", function() {
       test("shortcircuit", function() {
         const validators = [
-          ["parent", { run() {} }],
-          ["child", { dependsOn: { parent: true }, run() {} }]
+          ["parent", { func() {} }],
+          ["child", { dependsOn: { parent: true }, func() {} }]
         ];
         const rules = ["parent", "child"];
 
-        const promise = Promise.allSettled(
-          rulesEngine(validators, rules, { shortcircuit_or: true })
-        );
+        const result = tasksEngine(validators, rules, { shortcircuit_or: true });
+
+        expect(result).toMatchInlineSnapshot(`
+          Object {
+            "child": Promise {},
+            "parent": Promise {},
+          }
+        `);
+
+        const promise = Promise.allSettled(Object.values(result));
 
         return expect(promise).resolves.toMatchInlineSnapshot(`
                   Array [
                     Object {
                       "status": "fulfilled",
-                      "value": Object {
-                        "dependsOn": undefined,
-                        "name": "parent",
-                        "result": undefined,
-                      },
+                      "value": undefined,
                     },
                     Object {
                       "status": "fulfilled",
-                      "value": Object {
-                        "dependsOn": Object {
-                          "parent": true,
-                        },
-                        "name": "child",
-                        "result": undefined,
-                      },
+                      "value": undefined,
                     },
                   ]
                 `);
@@ -266,35 +267,34 @@ describe("rules dependencies", function() {
           [
             "parent",
             {
-              run() {
+              func() {
                 throw new Error();
               }
             }
           ],
-          ["child", { dependsOn: { parent: true }, run() {} }]
+          ["child", { dependsOn: { parent: true }, func() {} }]
         ];
         const rules = ["parent", "child"];
 
-        const promise = Promise.allSettled(rulesEngine(validators, rules));
+        const result = tasksEngine(validators, rules);
+
+        expect(result).toMatchInlineSnapshot(`
+          Object {
+            "child": Promise {},
+            "parent": Promise {},
+          }
+        `);
+
+        const promise = Promise.allSettled(Object.values(result));
 
         return expect(promise).resolves.toMatchInlineSnapshot(`
                   Array [
                     Object {
-                      "reason": Object {
-                        "dependsOn": undefined,
-                        "error": [Error],
-                        "name": "parent",
-                      },
+                      "reason": [Error],
                       "status": "rejected",
                     },
                     Object {
-                      "reason": Object {
-                        "dependsOn": Object {
-                          "parent": true,
-                        },
-                        "name": "child",
-                        "unsatisfied": true,
-                      },
+                      "reason": [Unsatisfied],
                       "status": "rejected",
                     },
                   ]
