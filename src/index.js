@@ -39,7 +39,7 @@ function findValidator_byName([name])
 
 function flatKeys(value)
 {
-  if(value === undefined) return []
+  if(value == null) return []
 
   if(Array.isArray(value)) return value.flatMap(flatKeys)
 
