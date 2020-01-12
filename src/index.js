@@ -1,8 +1,3 @@
-// TODO https://github.com/zloirock/core-js/issues/737
-require("core-js/modules/esnext.aggregate-error");
-require("core-js/modules/esnext.promise.any");
-
-
 class Unsatisfied extends Error
 {
   name = 'Unsatisfied'
