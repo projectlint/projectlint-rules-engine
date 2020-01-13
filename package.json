@@ -11,7 +11,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/projectlint/projectlint-tasks-engine.git"
+    "url": "git+https://github.com/projectlint/tasks-engine.git"
   },
   "keywords": [
     "lint",
@@ -33,9 +33,9 @@
   "author": "Jesús Leganés-Combarro 'piranna' <piranna@gmail.com>",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/projectlint/projectlint-tasks-engine/issues"
+    "url": "https://github.com/projectlint/tasks-engine/issues"
   },
-  "homepage": "https://github.com/projectlint/projectlint-tasks-engine#readme",
+  "homepage": "https://github.com/projectlint/tasks-engine#readme",
   "devDependencies": {
     "@babel/cli": "^7.8.0",
     "@babel/plugin-proposal-class-properties": "^7.8.0",
